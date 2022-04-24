@@ -1,0 +1,38 @@
+# Source Ref: https://www.padok.fr/en/blog/traefik-kubernetes-certmanager
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: nginx.ddc-k8s.ml
+  namespace: nginx
+spec:
+  dnsNames:
+    - nginx.ddc-k8s.ml
+  secretName: nginx.ddc-k8s.ml
+  issuerRef:
+    name: letsencrypt-prod-nginx
+    kind: ClusterIssuer
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: nginx-ingress-route
+  namespace: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod-nginx
+    ingress.kubernetes.io/ssl-redirect: "true"
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+  - kind: Rule
+    match: Host(`nginx.ddc-k8s.ml`) && PathPrefix(`/`)
+    services:
+    - kind: Service
+      name: nginx-service
+      # namespace: nginx
+      port: 80
+  tls:
+    secretName: nginx.ddc-k8s.ml
+
